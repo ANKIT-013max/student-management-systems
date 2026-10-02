@@ -250,6 +250,7 @@ public class StudentServiceImpl implements StudentService {
 
 /*
 -> Without Builder, you can use a constructor or setters.
+
     private StudentResponseDto entityToDto(Student student) {
         StudentResponseDto dto = new StudentResponseDto();
         dto.setId(student.getId());
@@ -261,3 +262,4 @@ public class StudentServiceImpl implements StudentService {
         return dto;
     }
 */
+
