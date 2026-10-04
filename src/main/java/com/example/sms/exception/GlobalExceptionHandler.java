@@ -1,6 +1,7 @@
 package com.example.sms.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -19,8 +21,8 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.NOT_FOUND,
                 exception.getMessage(),
-                null,
-                request
+                request,
+                null
         );
     }
 
@@ -30,8 +32,8 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.CONFLICT,
                 exception.getMessage(),
-                null,
-                request
+                request,
+                null
         );
     }
 
@@ -52,12 +54,24 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.BAD_REQUEST,
                 "Validation failed",
-                errors,
-                request
+                request,
+                errors
         );
     }
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, Map<String, String> errors, HttpServletRequest request) {
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(
+            ConflictException exception,
+            HttpServletRequest request) {
+
+        log.warn("Conflict. Path: {}, Message: {}", request.getRequestURI(), exception.getMessage());
+
+        return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
+    }
+
+
+    // HELPER
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request, Map<String, String> errors) {
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(java.time.LocalDateTime.now())

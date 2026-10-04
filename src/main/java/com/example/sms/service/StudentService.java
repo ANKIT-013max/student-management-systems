@@ -3,6 +3,7 @@ package com.example.sms.service;
 import com.example.sms.dto.StudentPatchRequestDto;
 import com.example.sms.dto.StudentRequestDto;
 import com.example.sms.dto.StudentResponseDto;
+import org.springframework.data.domain.Page;
 
 
 import java.util.List;
@@ -13,11 +14,20 @@ public interface StudentService {
 
     StudentResponseDto getStudentById(Long id);
 
-    List<StudentResponseDto> getAllStudents();
+    Page<StudentResponseDto> getAllStudents(int page, int size, String sortBy, String direction);
 
     StudentResponseDto updateStudent(Long id, StudentRequestDto studentRequestDto);
 
     StudentResponseDto patchStudent(Long id, StudentPatchRequestDto studentPatchRequestDto);
 
     void deleteStudent(Long id);
+
+
+    // ---- mapping: student, department & courses ------------------------------------------------------------------------------
+
+    StudentResponseDto assignDepartmentToStudent(Long studentId, Long departmentId);
+
+    StudentResponseDto enrollStudentInCourse(Long studentId, Long courseId);
+
+    StudentResponseDto unenrollStudentFromCourse(Long studentId, Long courseId);
 }

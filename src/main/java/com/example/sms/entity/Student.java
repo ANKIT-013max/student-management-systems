@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "student")
@@ -32,5 +34,24 @@ public class Student {
 
     @Column(nullable = false)
     private LocalDate dateOfBirth;
+
+    // Name of the uploaded profile image file (stored on disk, not in the DB)
+//    @Column(length = 255)
+//    private String profileImageName;
+
+    // Many Students -> One Department
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    // Many Students <-> Many Courses (join table: student_course)
+    @ManyToMany
+    @JoinTable(
+            name = "student_course",
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    @Builder.Default
+    private Set<Course> courses = new HashSet<>();
 
 }

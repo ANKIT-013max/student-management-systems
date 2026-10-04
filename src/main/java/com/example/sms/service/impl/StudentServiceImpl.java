@@ -3,9 +3,13 @@ package com.example.sms.service.impl;
 import com.example.sms.dto.StudentPatchRequestDto;
 import com.example.sms.dto.StudentRequestDto;
 import com.example.sms.dto.StudentResponseDto;
+import com.example.sms.entity.Course;
+import com.example.sms.entity.Department;
 import com.example.sms.entity.Student;
 import com.example.sms.exception.DuplicateResourceException;
 import com.example.sms.exception.ResourceNotFoundException;
+import com.example.sms.repository.CourseRepository;
+import com.example.sms.repository.DepartmentRepository;
 import com.example.sms.repository.StudentRepository;
 import com.example.sms.service.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +18,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -25,6 +34,8 @@ import java.util.List;
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
+    private final DepartmentRepository departmentRepository;
+    private final CourseRepository courseRepository;
 
 //    public static final Logger log = LoggerFactory.getLogger(StudentServiceImpl.class);
 
@@ -35,20 +46,16 @@ public class StudentServiceImpl implements StudentService {
     public StudentResponseDto createStudent(StudentRequestDto studentRequestDto) {
 
         log.warn("Creating student with email: {}", studentRequestDto.getEmail());
-
         if (studentRepository.existsByEmail(studentRequestDto.getEmail())) {
-
             log.warn("Student creation failed. Email already exists: {}", studentRequestDto.getEmail());
 
             throw new DuplicateResourceException("Student already exists with email : " + studentRequestDto.getEmail());
         }
 
         Student student = dtoToEntity(studentRequestDto);
-
         Student savedStudent = studentRepository.save(student);
 
         log.info("Student created successfully with id: {}", savedStudent.getId());
-
         return entityToDto(savedStudent);
     }
 
@@ -56,29 +63,37 @@ public class StudentServiceImpl implements StudentService {
     // GET BY ID
     @Override
     public StudentResponseDto getStudentById(Long id) {
-
         log.debug("Fetching student with id: {}", id);
-
-        Student student = findStudent(id);
+        Student student = findStudentById(id);
 
         log.debug("Student found with id: {}", id);
-
         return entityToDto(student);
     }
 
 
-    // GET ALL
+    // GET ALL // PAGINATION
     @Override
-    public List<StudentResponseDto> getAllStudents() {
+    public Page<StudentResponseDto> getAllStudents(
+            int page,
+            int size,
+            String sortBy,
+            String direction) {
 
-        log.debug("Fetching all students");
+        log.debug(
+                "Fetching students - page: {}, size: {}, sortBy: {}, direction: {}",
+                page, size, sortBy, direction
+        );
 
-        List<StudentResponseDto> students = studentRepository.findAll()
-                .stream()
-                .map(this::entityToDto)
-                .toList();
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
 
-        log.info("Fetched {} students", students.size());
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<StudentResponseDto> students = studentRepository.findAll(pageable)
+                .map(this::entityToDto);
+
+        log.info("Fetched {} students", students.getNumberOfElements());
 
         return students;
     }
@@ -90,17 +105,13 @@ public class StudentServiceImpl implements StudentService {
     public StudentResponseDto updateStudent(Long id, StudentRequestDto studentRequestDto) {
 
         log.info("Updating student with id: {}", id);
-
-        Student existingStudent = findStudent(id);
+        Student existingStudent = findStudentById(id);
 
         if (studentRepository.existsByEmailAndIdNot(studentRequestDto.getEmail(), id)) {
-
             log.warn("Student update failed. Email {} is already used by another student", studentRequestDto.getEmail());
 
             throw new DuplicateResourceException("Another student already exists with email : " + studentRequestDto.getEmail());
-
         }
-
         // Update existing entity
         existingStudent.setFirstName(studentRequestDto.getFirstName());
         existingStudent.setLastName(studentRequestDto.getLastName());
@@ -111,7 +122,6 @@ public class StudentServiceImpl implements StudentService {
         Student updatedStudent = studentRepository.save(existingStudent);
 
         log.info("Student updated successfully with id: {}", updatedStudent.getId());
-
         return entityToDto(updatedStudent);
     }
 
@@ -122,8 +132,7 @@ public class StudentServiceImpl implements StudentService {
     public StudentResponseDto patchStudent(Long id, StudentPatchRequestDto dto) {
 
         log.info("Partially updating student with id: {}", id);
-
-        Student existingStudent = findStudent(id);
+        Student existingStudent = findStudentById(id);
 
         boolean updated = false;
 
@@ -142,7 +151,6 @@ public class StudentServiceImpl implements StudentService {
         if (dto.getEmail() != null) {
 
             if (studentRepository.existsByEmailAndIdNot(dto.getEmail(), id)) {
-
                 log.warn("Student patch failed. Email {} is already used by another student", dto.getEmail());
 
                 throw new DuplicateResourceException("Another student already exists with email : " + dto.getEmail());
@@ -187,19 +195,74 @@ public class StudentServiceImpl implements StudentService {
     @Transactional
     public void deleteStudent(Long id) {
         log.info("Deleting student with id: {}", id);
-
-        Student existingStudent = findStudent(id);
+        Student existingStudent = findStudentById(id);
 
         studentRepository.delete(existingStudent);
-
         log.info("Student deleted successfully with id: {}", id);
+    }
+
+
+    // =================================================================================================================
+    // MAPPING: student, department & courses
+    // =================================================================================================================
+
+
+    @Override
+    @Transactional
+    public StudentResponseDto assignDepartmentToStudent(Long studentId, Long departmentId) {
+
+        log.info("Assigning student {} to department {}", studentId, departmentId);
+
+        Student existingStudent = findStudentById(studentId);
+        existingStudent.setDepartment(findDepartmentById(departmentId));
+
+        return entityToDto(studentRepository.save(existingStudent));
+    }
+
+
+    @Override
+    @Transactional
+    public StudentResponseDto enrollStudentInCourse(Long studentId, Long courseId) {
+        log.info("Enrolling student {} in course {}", studentId, courseId);
+
+        Student student = findStudentById(studentId);
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found : " + courseId));
+
+        boolean alreadyEnrolled = student.getCourses().stream()
+                .anyMatch(c -> c.getId().equals(courseId));
+
+        if (alreadyEnrolled) {
+            throw new DuplicateResourceException("Student " + studentId + " is already enrolled in course " + courseId);
+        }
+
+        student.getCourses().add(course);
+
+        return entityToDto(studentRepository.save(student));
+    }
+
+
+    @Override
+    @Transactional
+    public StudentResponseDto unenrollStudentFromCourse(Long studentId, Long courseId) {
+        log.info("Removing student {} from course {}", studentId, courseId);
+
+        Student student = findStudentById(studentId);
+
+        boolean removed = student.getCourses().removeIf(c -> c.getId().equals(courseId));
+
+        if (!removed) {
+            throw new ResourceNotFoundException("Student " + studentId + " is not enrolled in course " + courseId);
+        }
+
+        return entityToDto(studentRepository.save(student));
     }
 
 
     // HELPER METHODS
 
     // Helper method to find student
-    public Student findStudent(Long id) {
+    public Student findStudentById(Long id) {
 
         log.debug("Searching for student with id: {}", id);
 
@@ -209,6 +272,12 @@ public class StudentServiceImpl implements StudentService {
 
                     return new ResourceNotFoundException("Student not found : " + id);
                 });
+    }
+
+    // Helper method to find department
+    private Department findDepartmentById(Long id) {
+        return departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found : " + id));
     }
 
     // Helper method: DTO → Entity

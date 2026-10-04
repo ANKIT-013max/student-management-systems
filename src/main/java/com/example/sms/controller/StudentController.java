@@ -11,7 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+
 
 @RestController
 @RequestMapping("/api/v1/students")
@@ -39,16 +40,14 @@ public class StudentController {
     }
 
 
-    @GetMapping("/getAll")
-    public ResponseEntity<List<StudentResponseDto>> getAllStudents() {
+    @GetMapping("get-all")
+    public ResponseEntity<Page<StudentResponseDto>> getAllStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
 
-        log.debug("Received request to fetch all students");
-
-        List<StudentResponseDto> students = studentService.getAllStudents();
-
-        log.info("Returning {} students", students.size());
-
-        return ResponseEntity.ok(students);
+        return ResponseEntity.ok(studentService.getAllStudents(page, size, sortBy, direction));
     }
 
 
@@ -103,5 +102,35 @@ public class StudentController {
         return ResponseEntity.noContent().build();
     }
 
+
+    // =================================================================================================================
+    // MAPPING: student, department & courses
+    // =================================================================================================================
+
+    @PutMapping("/{studentId}/assign-department/{departmentId}")
+    public ResponseEntity<StudentResponseDto> assignDepartmentToStudent(
+            @PathVariable Long studentId,
+            @PathVariable Long departmentId) {
+
+        return ResponseEntity.ok(studentService.assignDepartmentToStudent(studentId, departmentId));
+    }
+
+
+    @PostMapping("/{studentId}/enroll-courses/{courseId}")
+    public ResponseEntity<StudentResponseDto> enrollStudentInCourse(
+            @PathVariable Long studentId,
+            @PathVariable Long courseId) {
+
+        return ResponseEntity.ok(studentService.enrollStudentInCourse(studentId, courseId));
+    }
+
+
+    @DeleteMapping("/{studentId}/unenroll-courses/{courseId}")
+    public ResponseEntity<StudentResponseDto> unenrollStudentFromCourse(
+            @PathVariable Long studentId,
+            @PathVariable Long courseId) {
+
+        return ResponseEntity.ok(studentService.unenrollStudentFromCourse(studentId, courseId));
+    }
 
 }
