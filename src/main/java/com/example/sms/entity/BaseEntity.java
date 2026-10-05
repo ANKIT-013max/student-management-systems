@@ -1,4 +1,4 @@
-package com.example.sms.common;
+package com.example.sms.entity;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
