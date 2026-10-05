@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,11 +69,14 @@ public class StudentServiceImpl implements StudentService {
 
     // GET BY ID
     @Override
+    @Cacheable(value = "students", key = "#id")
     public StudentResponseDto getStudentById(Long id) {
-        log.debug("Fetching student with id: {}", id);
+        log.debug("Fetching student from DATABASE with id: {}", id);
+
         Student student = findStudentById(id);
 
         log.debug("Student found with id: {}", id);
+
         return entityToDto(student);
     }
 
@@ -106,6 +112,7 @@ public class StudentServiceImpl implements StudentService {
     // UPDATE
     @Override
     @Transactional
+    @CachePut(value = "students", key = "#id")
     public StudentResponseDto updateStudent(Long id, StudentRequestDto studentRequestDto) {
 
         log.info("Updating student with id: {}", id);
@@ -133,6 +140,7 @@ public class StudentServiceImpl implements StudentService {
     // PATCH
     @Override
     @Transactional
+    @CachePut(value = "students", key = "#id")
     public StudentResponseDto patchStudent(Long id, StudentPatchRequestDto dto) {
 
         log.info("Partially updating student with id: {}", id);
@@ -197,6 +205,7 @@ public class StudentServiceImpl implements StudentService {
     // DELETE
     @Override
     @Transactional
+    @CacheEvict(value = "students", key = "#id")
     public void deleteStudent(Long id) {
         log.info("Deleting student with id: {}", id);
         Student existingStudent = findStudentById(id);
@@ -213,6 +222,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     @Transactional
+    @CachePut(value = "students" , key = "#studentId")
     public StudentResponseDto assignDepartmentToStudent(Long studentId, Long departmentId) {
 
         log.info("Assigning student {} to department {}", studentId, departmentId);
