@@ -15,9 +15,6 @@ import java.util.Set;
 @Builder
 public class Course extends BaseEntity{
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(nullable = false, unique = true, length = 20)
     private String courseCode;
@@ -30,6 +27,17 @@ public class Course extends BaseEntity{
 
     @Column(nullable = false)
     private Integer credits;
+
+    // Capacity check is what makes the enrollment-approval workflow
+    // realistic: enrolledCount starts at 0 and only ever changes inside
+    // EnrollmentRequestServiceImpl.approve(), never set directly by a client.
+    @Column(nullable = false)
+    private Integer capacity;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer enrolledCount = 0;
+
 
     // Many Courses -> One Department
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
