@@ -1,6 +1,5 @@
 package com.example.sms.entity;
 
-import com.example.sms.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -9,7 +8,8 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "enrollment_requests")
 @Getter
 @Setter
-//@NoArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
 public class EnrollmentRequest extends BaseEntity {
 

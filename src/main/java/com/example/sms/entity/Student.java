@@ -12,9 +12,9 @@ import java.util.Set;
 @Table(name = "student")
 @Setter
 @Getter
-@AllArgsConstructor
-@RequiredArgsConstructor
-@Builder
+@NoArgsConstructor
+//@RequiredArgsConstructor
+@SuperBuilder
 public class Student extends BaseEntity {
 
 

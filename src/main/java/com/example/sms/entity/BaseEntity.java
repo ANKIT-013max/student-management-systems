@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @MappedSuperclass
-@AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+@SuperBuilder
 public class BaseEntity {
 
     @Id

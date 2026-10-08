@@ -1,22 +1,17 @@
 package com.example.sms.entity;
 
-import com.example.sms.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-/**
- * Deliberately minimal: a row here just PROVES a side effect happened
- * (no real email is sent). It's the stand-in for "notify the student"
- * in the approval/reject workflow, kept simple on purpose.
- */
 @Entity
 @Table(name = "notifications")
 @Getter
 @Setter
-//@NoArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
 public class Notification extends BaseEntity {
 
